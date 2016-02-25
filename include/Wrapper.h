@@ -63,6 +63,16 @@ class Repository {
   // @param id Identity of the tree to locate.
   git_tree* getTree(const git_oid* id);
 
+  /**
+   Read a file from the filesystem and write its content
+   to the Object Database as a loose blob
+
+   @param path file from which the blob will be created
+   @param id return the id of the written blob
+   @return true if there is no error.
+  */
+  bool createBlobFromDisk(const std::string& path, git_oid* id);
+
   git_repository* get() { return repo_; }
 
   // Returns git_repository pointer. The caller needs to

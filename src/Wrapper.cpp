@@ -48,6 +48,10 @@ git_tree* Repository::getTree(const git_oid* id) {
   }
 }
 
+bool Repository::createBlobFromDisk(const std::string& path, git_oid* id) {
+  return (0 == git_blob_create_fromdisk(id, repo_, path.c_str()));
+}
+
 git_repository* Repository::release() {
   auto ret = repo_;
   repo_ = nullptr;
