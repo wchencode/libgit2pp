@@ -7,8 +7,7 @@ if ($ENV{CXX})
 set(CMAKE_CXX_COMPILER $ENV{CXX})
 endif ($ENV{CXX})
 
-set(CMAKE_CXX_FLAGS "-std=c++1y")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS "-std=c++1y -g")
 
 # Try to find libgit2 
 find_path(LIBGIT2_INCLUDE_DIR git2.h
@@ -19,3 +18,4 @@ message("libgit2 header is ${LIBGIT2_INCLUDE_DIR}")
 message("libgit2 library is ${LIBGIT2_LIBRARY}")
 
 add_subdirectory(src)
+add_subdirectory(tests)

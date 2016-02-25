@@ -4,8 +4,9 @@ target_include_directories(hello PUBLIC
     ${lIBGIT2_INCLUDE_DIR})
 
 add_library(
-  git2pp
+  git2pp STATIC
   Oid.cpp
+  Wrapper.cpp
 )
 target_include_directories(
   git2pp PUBLIC
