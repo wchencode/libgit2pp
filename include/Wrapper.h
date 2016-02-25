@@ -45,6 +45,24 @@ class Repository {
 
   ~Repository();
 
+  /**
+   Create a new tree builder.
+
+   The tree builder can be used to create or modify trees in memory and
+   write them as tree objects to the database.
+
+   If the `source` parameter is not NULL, the tree builder will be
+   initialized with the entries of the given tree.
+
+   If the `source` parameter is NULL, the tree builder will start with no
+   entries and will have to be filled manually.
+  */
+  git_treebuilder* createTreeBuilder(const git_tree* source);
+
+  // Lookup a tree object from the repository.
+  // @param id Identity of the tree to locate.
+  git_tree* getTree(const git_oid* id);
+
   git_repository* get() { return repo_; }
 
   // Returns git_repository pointer. The caller needs to
@@ -55,4 +73,97 @@ class Repository {
   git_repository* repo_;
 };
 
-}  // libgit2pp
+// A wrapper class for git_tree_builder.
+class TreeBuilder {
+ public:
+  // Construct a wrapper from the actual builder.
+  explicit TreeBuilder(git_treebuilder* builder) : b_(builder) {
+  }
+
+  ~TreeBuilder() {
+    if (b_) {
+      git_treebuilder_free(b_);
+    }
+  }
+
+  // Clear all the entires in the builder
+  void clear() {
+    git_treebuilder_clear(b_);
+  }
+
+  // Get the number of entries in the treebuilder.
+  int entryCount() {
+    return git_treebuilder_entrycount(b_);
+  }
+
+  /**
+   Add or update an entry to the builder
+
+   Insert a new entry for `filename` in the builder with the
+   given attributes.
+
+   If an entry named `filename` already exists, its attributes
+   will be updated with the given ones.
+
+   No attempt is being made to ensure that the provided oid points
+   to an existing git object in the object database, nor that the
+   attributes make sense regarding the type of the pointed at object.
+
+   @param filename Filename of the entry
+   @param id SHA1 oid of the entry
+   @param filemode Folder attributes of the entry. This parameter must
+          be valued with one of the following entries: 0040000, 0100644,
+          0100755, 0120000 or 0160000.
+  */
+  const git_tree_entry* insert(
+      const std::string& filename,
+      const git_oid* id,
+      git_filemode_t filemode) {
+    const git_tree_entry* out = nullptr;
+    if (0 == git_treebuilder_insert(
+                 &out, b_, filename.c_str(), id, filemode)) {
+      return out;
+    } else {
+      return nullptr;
+    }
+  }
+
+  // Remove a file entry from treebuilder.
+  void remove(const std::string& filename) {
+    git_treebuilder_remove(b_, filename.c_str());
+  }
+
+  /**
+   Write the contents of the tree builder as a tree object
+
+   The tree builder will be written to the given `repo`, and its
+   identifying SHA1 hash will be stored in the `id` pointer.
+
+   @param id Pointer to store the OID of the newly written tree
+   @return true if there is no error. 
+  */
+  bool write(git_oid* id) {
+    return (0 == git_treebuilder_write(id, b_));
+  }
+
+ private:
+  git_treebuilder* b_;
+};
+
+// Wrapper class for git_tree.
+class Tree {
+ public:
+  explicit Tree(git_tree* t) : tree_(t) {
+  }
+
+  ~Tree() {
+    if (tree_) {
+      git_tree_free(tree_);
+    }
+  }
+
+ private:
+  git_tree* tree_;
+};
+
+} // libgit2pp

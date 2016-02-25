@@ -30,6 +30,24 @@ Repository::~Repository() {
   }
 }
 
+git_treebuilder* Repository::createTreeBuilder(const git_tree* source) {
+  git_treebuilder* out = nullptr;
+  if (0 == git_treebuilder_new(&out, repo_, source)) {
+    return out;
+  } else {
+    return nullptr;
+  }
+}
+
+git_tree* Repository::getTree(const git_oid* id) {
+  git_tree* out = nullptr;
+  if (0 == git_tree_lookup(&out, repo_, id)) {
+    return out;
+  } else {
+    return nullptr;
+  }
+}
+
 git_repository* Repository::release() {
   auto ret = repo_;
   repo_ = nullptr;
