@@ -7,6 +7,7 @@ add_library(
   git2pp STATIC
   Oid.cpp
   Wrapper.cpp
+  TestUtils.cpp
 )
 target_include_directories(
   git2pp PUBLIC
