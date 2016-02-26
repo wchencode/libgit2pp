@@ -73,6 +73,39 @@ class Repository {
   */
   bool createBlobFromDisk(const std::string& path, git_oid* id);
 
+  /**
+   Create new commit in the repository from a list of `git_object` pointers
+
+   @param id Pointer in which to store the OID of the newly created commit
+   @param updateRef If not empty, name of the reference that
+          will be updated to point to this commit. If the reference
+          is not direct, it will be resolved to a direct reference.
+          Use "HEAD" to update the HEAD of the current branch and
+          make it point to this commit. If the reference doesn't
+          exist yet, it will be created. If it does exist, the first
+          parent must be the tip of this branch.
+   @param authorName
+   @param authorEmail
+   @param message Full message for this commit
+   @param tree An instance of a `git_tree` object that will
+    be used as the tree for the commit. This tree object must
+    also be owned by the given `repo`.
+   @param parentCount Number of parents for this commit
+   @param parents Array of `parent_count` pointers to `git_commit`
+    objects that will be used as the parents for this commit. This
+    array may be NULL if `parent_count` is 0 (root commit). All the
+    given commits must be owned by the `repo`.
+  */
+  bool commit(
+      git_oid* id,
+      const std::string& updateRef,
+      const std::string& authorName,
+      const std::string& authorEmail,
+      const std::string& message,
+      const git_tree *tree,
+      size_t parentCount,
+      const git_commit *parents[]);
+
   git_repository* get() { return repo_; }
 
   // Returns git_repository pointer. The caller needs to
