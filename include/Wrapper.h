@@ -106,6 +106,20 @@ class Repository {
       size_t parentCount,
       const git_commit *parents[]);
 
+  // Get git_reference object for HEAD.
+  git_reference* getHead();
+
+  // Get object database of this repository.
+  git_odb* getOdb();
+
+  /**
+   Lookup a commit object from a repository.
+
+   @param id identity of the commit to locate. If the object is
+          an annotated tag it will be peeled back to the commit.
+  */
+  git_commit* getCommit(const git_oid* id);
+
   git_repository* get() { return repo_; }
 
   // Returns git_repository pointer. The caller needs to
@@ -207,6 +221,54 @@ class Tree {
 
  private:
   git_tree* tree_;
+};
+
+// A wrapper class for git_reference.
+class Reference {
+ public:
+  explicit Reference(git_reference* r) : ref_(r) {
+  }
+
+  ~Reference() {
+    if (ref_) {
+      git_reference_free(ref_);
+    }
+  }
+
+ private:
+  git_reference* ref_;
+};
+
+// A wrapper class for git_odb.
+class Odb {
+ public:
+  explicit Odb(git_odb* o) : odb_(o) {
+  }
+
+  ~Odb() {
+    if (odb_) {
+      git_odb_free(odb_);
+    }
+  }
+
+ private:
+  git_odb* odb_;
+};
+
+// A wrapper class for git_commit.
+class Commit {
+ public:
+  explicit Commit(git_commit* c) : commit_(c) {
+  }
+
+  ~Commit() {
+    if (commit_) {
+      git_commit_free(commit_);
+    }
+  }
+
+ private:
+  git_commit* commit_;
 };
 
 } // libgit2pp

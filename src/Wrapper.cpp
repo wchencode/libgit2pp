@@ -81,6 +81,33 @@ bool Repository::commit(
   return (ret == 0);
 }
 
+git_reference* Repository::getHead() {
+  git_reference* out = nullptr;
+  if (0 == git_repository_head(&out, repo_)) {
+    return out;
+  } else {
+    return nullptr;
+  }
+}
+
+git_odb* Repository::getOdb() {
+  git_odb* out = nullptr;
+  if (0 == git_repository_odb(&out, repo_)) {
+    return out;
+  } else {
+    return nullptr;
+  }
+}
+
+git_commit* Repository::getCommit(const git_oid* id) {
+  git_commit* commit = nullptr;
+  if (0 == git_commit_lookup(&commit, repo_, id)) {
+    return commit;
+  } else {
+    return nullptr;
+  }
+}
+
 git_repository* Repository::release() {
   auto ret = repo_;
   repo_ = nullptr;
