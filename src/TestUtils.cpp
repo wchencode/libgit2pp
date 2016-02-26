@@ -29,7 +29,7 @@ void setupRoot(const string& root) {
 }
 
 void writeToFile(const string& path, const string& data) {
-  int fd = open(path.c_str(), O_CREAT|O_WRONLY);
+  int fd = open(path.c_str(), O_CREAT|O_WRONLY, 0644);
   if (fd < 0) {
     throw runtime_error("Fails to create a tmp file");
   }
