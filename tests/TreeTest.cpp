@@ -90,6 +90,18 @@ void testCreateNewTree() {
   if (1 != git_tree_entrycount(tree)) {
     throw runtime_error("Tree should have only one entry");
   }
+  // There is no need to release @param entry.
+  auto entry = git_tree_entry_byname(tree, "README");
+  if (entry == nullptr) {
+    throw runtime_error("Fails to find filename in the tree");
+  }
+  const git_oid* retId = git_tree_entry_id(entry);
+  if (retId == nullptr) {
+    throw runtime_error("Fails to retrieve object ID");
+  }
+  if (0 != git_oid_cmp(&id, retId)) {
+    throw runtime_error("Expect to retrieve original object ID");
+  }
 }
 
 main() {
