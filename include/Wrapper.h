@@ -41,6 +41,17 @@ class Repository {
   */
   Repository(const std::string& path, bool isBare);
 
+  /**
+   Clone a remote repository.
+
+   By default this creates its repository and initial remote to match
+   git's defaults.
+
+   @param url the remote repository to clone
+   @param localPath local directory to clone to
+  */
+  Repository(const std::string& url, const std::string& localPath);
+
   // Moving constructor.
   Repository(Repository&& b);
 
@@ -120,6 +131,10 @@ class Repository {
           an annotated tag it will be peeled back to the commit.
   */
   git_commit* getCommit(const git_oid* id);
+
+  // Get the information for a particular remote
+  // @param name the remote's name
+  git_remote* getRemote(const std::string& name);
 
   git_repository* get() { return repo_; }
 
@@ -240,6 +255,14 @@ template <> struct default_delete<git_commit> {
   void operator()(git_commit* commit) const {
     if (commit) {
       git_commit_free(commit);
+    }
+  }
+};
+
+template <> struct default_delete<git_remote> {
+  void operator()(git_remote* remote) const {
+    if (remote) {
+      git_remote_free(remote);
     }
   }
 };

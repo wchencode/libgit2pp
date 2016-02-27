@@ -20,6 +20,13 @@ Repository::Repository(const string& path, bool isBare) {
   }
 }
 
+Repository::Repository(const std::string& url, const std::string& localPath)
+    : repo_(nullptr) {
+  if (0 != git_clone(&repo_, url.c_str(), localPath.c_str(), nullptr)) {
+    throw runtime_error("Fails to clone a git repository");
+  }
+}
+
 Repository::Repository(Repository&& b) {
   std::swap(repo_, b.repo_);
 }
@@ -103,6 +110,15 @@ git_commit* Repository::getCommit(const git_oid* id) {
   git_commit* commit = nullptr;
   if (0 == git_commit_lookup(&commit, repo_, id)) {
     return commit;
+  } else {
+    return nullptr;
+  }
+}
+
+git_remote* Repository::getRemote(const string& name) {
+  git_remote* out = nullptr;
+  if (0 == git_remote_lookup(&out, repo_, name.c_str())) {
+    return out;
   } else {
     return nullptr;
   }
