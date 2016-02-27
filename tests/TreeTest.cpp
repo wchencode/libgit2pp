@@ -53,18 +53,17 @@ void testCreateNewTree() {
   }
 
   // Lookup the tree.
-  auto tree = r->getTree(&tid);
+  unique_ptr<git_tree> tree(r->getTree(&tid));
   if (!tree) {
     throw runtime_error("Fails to retrieve a created tree");
   }
 
   // Manage the returned tree.
-  Tree t(tree);
-  if (1 != git_tree_entrycount(tree)) {
+  if (1 != git_tree_entrycount(tree.get())) {
     throw runtime_error("Tree should have only one entry");
   }
   // There is no need to release @param entry.
-  auto entry = git_tree_entry_byname(tree, "README");
+  auto entry = git_tree_entry_byname(tree.get(), "README");
   if (entry == nullptr) {
     throw runtime_error("Fails to find filename in the tree");
   }

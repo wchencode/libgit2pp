@@ -54,7 +54,7 @@ void testFirstCommit() {
   }
 
   // Lookup the tree.
-  auto tree = r->getTree(&tid);
+  unique_ptr<git_tree> tree(r->getTree(&tid));
   if (!tree) {
     throw runtime_error("Fails to retrieve a created tree");
   }
@@ -67,7 +67,7 @@ void testFirstCommit() {
           "My Name",
           "myname@gmail.com",
           "My first commit",
-          tree,
+          tree.get(),
           0, /*size_t parentCount*/
           nullptr /*const git_commit *parents[]*/)) {
     throw runtime_error("Fails to commit");
@@ -98,22 +98,20 @@ void testMoreCommit() {
   unlink(tmppath.c_str());
 
   // Get the head.
-  git_reference* gr = r->getHead();
-  if (gr == nullptr) {
+  unique_ptr<git_reference> gr(r->getHead());
+  if (gr.get() == nullptr) {
     throw runtime_error("Fails to find the HEAD");
   }
-  Reference ref(gr);
-  const git_oid* target = git_reference_target(gr);
+  const git_oid* target = git_reference_target(gr.get());
   if (target == nullptr) {
     throw runtime_error("Fails to find target");
   }
 
   // Verify target's type.
-  auto odb = r->getOdb();
-  Odb o(odb);
+  unique_ptr<git_odb> odb(r->getOdb());
   size_t len = 0;
   git_otype type;
-  if (0 != git_odb_read_header(&len, &type, odb, target)) {
+  if (0 != git_odb_read_header(&len, &type, odb.get(), target)) {
     throw runtime_error("Fails to read object from ODB");
   }
   if (type != GIT_OBJ_COMMIT) {
@@ -121,19 +119,18 @@ void testMoreCommit() {
   }
 
   // Retrieve existing tree.
-  git_commit* c = r->getCommit(target);
-  if (c == nullptr) {
+  unique_ptr<git_commit> c(r->getCommit(target));
+  if (c.get() == nullptr) {
     throw runtime_error("Fails to retrieve a commit");
   }
-  Commit commit(c);
-  git_tree* existingTree = nullptr;
-  if (0 != git_commit_tree(&existingTree, c)) {
+  git_tree* tmpTree = nullptr;
+  if (0 != git_commit_tree(&tmpTree, c.get())) {
     throw runtime_error("Fails to get existing tree");
   }
-  Tree treeHolder(existingTree);
+  unique_ptr<git_tree> existingTree(tmpTree);
 
   // Build a new tree.
-  auto builder = r->createTreeBuilder(existingTree);
+  auto builder = r->createTreeBuilder(existingTree.get());
   if (builder == nullptr) {
     throw runtime_error("Fails to create a new treebuilder");
   }
@@ -147,21 +144,21 @@ void testMoreCommit() {
   }
 
   // Lookup the tree.
-  auto tree = r->getTree(&tid);
+  unique_ptr<git_tree> tree(r->getTree(&tid));
   if (!tree) {
     throw runtime_error("Fails to retrieve a created tree");
   }
 
   // Commit a change.
   git_oid commitId;
-  const git_commit* parents[] = {c};
+  const git_commit* parents[] = {c.get()};
   if (!r->commit(
           &commitId,
           "HEAD",
           "My Name",
           "myname@gmail.com",
           "My second commit",
-          tree,
+          tree.get(),
           1, /*size_t parentCount*/
           parents /*const git_commit *parents[]*/)) {
     throw runtime_error("Fails to commit");

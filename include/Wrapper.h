@@ -2,6 +2,7 @@
 
 #include "git2.h"
 #include <string>
+#include <memory>
 
 namespace libgit2pp {
 
@@ -207,68 +208,40 @@ class TreeBuilder {
   git_treebuilder* b_;
 };
 
-// Wrapper class for git_tree.
-class Tree {
- public:
-  explicit Tree(git_tree* t) : tree_(t) {
-  }
-
-  ~Tree() {
-    if (tree_) {
-      git_tree_free(tree_);
-    }
-  }
-
- private:
-  git_tree* tree_;
-};
-
-// A wrapper class for git_reference.
-class Reference {
- public:
-  explicit Reference(git_reference* r) : ref_(r) {
-  }
-
-  ~Reference() {
-    if (ref_) {
-      git_reference_free(ref_);
-    }
-  }
-
- private:
-  git_reference* ref_;
-};
-
-// A wrapper class for git_odb.
-class Odb {
- public:
-  explicit Odb(git_odb* o) : odb_(o) {
-  }
-
-  ~Odb() {
-    if (odb_) {
-      git_odb_free(odb_);
-    }
-  }
-
- private:
-  git_odb* odb_;
-};
-
-// A wrapper class for git_commit.
-class Commit {
- public:
-  explicit Commit(git_commit* c) : commit_(c) {
-  }
-
-  ~Commit() {
-    if (commit_) {
-      git_commit_free(commit_);
-    }
-  }
-
- private:
-  git_commit* commit_;
-};
-
 } // libgit2pp
+
+namespace std {
+
+template <> struct default_delete<git_tree> {
+  void operator()(git_tree* tree) const {
+    if (tree) {
+      git_tree_free(tree);
+    }
+  }
+};
+
+template <> struct default_delete<git_reference> {
+  void operator()(git_reference* ref) const {
+    if (ref) {
+      git_reference_free(ref);
+    }
+  }
+};
+
+template <> struct default_delete<git_odb> {
+  void operator()(git_odb* odb) const {
+    if (odb) {
+      git_odb_free(odb);
+    }
+  }
+};
+
+template <> struct default_delete<git_commit> {
+  void operator()(git_commit* commit) const {
+    if (commit) {
+      git_commit_free(commit);
+    }
+  }
+};
+
+} // std
