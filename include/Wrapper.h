@@ -3,6 +3,8 @@
 #include "git2.h"
 #include <string>
 #include <memory>
+#include <unordered_map>
+#include <unordered_set>
 
 namespace libgit2pp {
 
@@ -56,6 +58,51 @@ class Repository {
   Repository(Repository&& b);
 
   ~Repository();
+
+  /*
+   Create a new tree in object database.
+
+   @Param id If the method returns true, this is the object ID of the
+   new git tree created.
+
+   @Param source the hex representation of an object id (original tree).
+   If it is not empty, the new tree will be initialized with the entries
+   of the original tree.
+
+   @Param addedFiles the relative path of files that is going to be added
+   or changed and their associated object IDs.
+
+   @Param deletedFiles the relative path of files that is going to be
+   deleted.
+  */
+  bool createTreeUsingExistingTree(
+      git_oid* id,
+      const std::string& source,
+      const std::unordered_map<std::string, git_oid*>& addedFiles,
+      const std::unordered_set<std::string>& deletedFiles);
+
+  /*
+   Create a new tree in object database.
+
+   @Param id If the method returns true, this is the object ID of the
+   new git tree created.
+
+   @Param commit the hex representation of a commit. If it is not empty,
+   the new tree will be initialized with the entries from the tree of
+   the commit. Otherwise, the new tree will be initialized with the
+   entries from the tree of the HEAD.
+
+   @Param addedFiles the relative path of files that is going to be added
+   or changed and their associated object IDs.
+
+   @Param deletedFiles the relative path of files that is going to be
+   deleted.
+  */
+  bool createTreeUsingCommit(
+      git_oid* id,
+      const std::string& commit,
+      const std::unordered_map<std::string, git_oid*>& addedFiles,
+      const std::unordered_set<std::string>& deletedFiles);
 
   /**
    Create a new tree builder.
@@ -144,6 +191,12 @@ class Repository {
 
  private:
   git_repository* repo_;
+
+  bool createTreeUsingGitTree(
+      git_oid* id,
+      std::unique_ptr<git_tree> tree,
+      const std::unordered_map<std::string, git_oid*>& addedFiles,
+      const std::unordered_set<std::string>& deletedFiles);
 };
 
 // A wrapper class for git_tree_builder.
@@ -263,6 +316,14 @@ template <> struct default_delete<git_remote> {
   void operator()(git_remote* remote) const {
     if (remote) {
       git_remote_free(remote);
+    }
+  }
+};
+
+template <> struct default_delete<git_treebuilder> {
+  void operator()(git_treebuilder* b) const {
+    if (b) {
+      git_treebuilder_free(b);
     }
   }
 };
