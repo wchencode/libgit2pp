@@ -226,6 +226,9 @@ class Repository {
       std::unique_ptr<git_tree> tree,
       const std::unordered_map<std::string, git_oid*>& addedFiles,
       const std::unordered_set<std::string>& deletedFiles);
+
+  // Get last commit. If there is no commit yet, returns nullptr.
+  git_commit* getHeadCommit();
 };
 
 // A wrapper class for git_tree_builder.

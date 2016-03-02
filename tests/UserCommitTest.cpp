@@ -32,7 +32,7 @@ void testUserCommit() {
   };
 
   string id = r->commit(
-      "",
+      "HEAD",
       "My Name",
       "my.name@gmail.com",
       "A testing commit",

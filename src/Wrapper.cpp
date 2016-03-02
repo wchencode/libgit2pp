@@ -81,13 +81,29 @@ string Repository::commit(
 
   git_oid id;
   if (createTreeUsingCommit(&id, "", addedFiles, deletions)) {
-    string ret;
-    ret.resize(GIT_OID_HEXSZ);
-    git_oid_nfmt(const_cast<char*>(ret.data()), ret.size(), &id);
-    return ret;
-  } else {
-    return string();
+    unique_ptr<git_commit> c(getHeadCommit());
+    unique_ptr<git_tree> tree(getTree(&id));
+
+    if (c.get() != nullptr) {
+      // There are commits before.
+      const git_commit* parents[] = { c.get() };
+      if (!commit(&id, updateRef, authorName, authorEmail, message,
+          tree.get(), 1, parents)) {
+        return string();
+      }
+    } else {
+      // This is the first commit in the repository.
+      if (!commit(&id, updateRef, authorName, authorEmail, message,
+          tree.get(), 0, nullptr)) {
+        return string();
+      }
+    }
   }
+
+  string ret;
+  ret.resize(GIT_OID_HEXSZ);
+  git_oid_nfmt(const_cast<char*>(ret.data()), ret.size(), &id);
+  return ret;
 }
 
 bool Repository::createTreeUsingExistingTree(
@@ -113,54 +129,61 @@ bool Repository::createTreeUsingExistingTree(
       id, unique_ptr<git_tree>(tree), addedFiles, deletedFiles);
 }
 
+git_commit* Repository::getHeadCommit() {
+  const git_oid* target = nullptr;
+  git_oid commitId;
+
+  // Get the head.
+  unique_ptr<git_reference> gr(getHead());
+  if (gr.get() != nullptr) {
+    target = git_reference_target(gr.get());
+  }
+
+  // If there is no HEAD yet, it is the first commit in the repository.
+  if (!target) {
+    return nullptr;
+  }
+
+  // Verify target's type.
+  unique_ptr<git_odb> odb(getOdb());
+  size_t len = 0;
+  git_otype type;
+  if (0 != git_odb_read_header(&len, &type, odb.get(), target)) {
+    throw runtime_error("Fails to read object from ODB");
+  }
+  if (type != GIT_OBJ_COMMIT) {
+    throw runtime_error("Expect a commit object");
+  }
+
+  return getCommit(target);
+}
+
 bool Repository::createTreeUsingCommit(
     git_oid* id,
     const string& commit,
     const unordered_map<std::string, git_oid*>& addedFiles,
     const unordered_set<std::string>& deletedFiles) {
   const git_oid* target = nullptr;
-  git_oid commitId;
-  unique_ptr<git_reference> gr;
+  unique_ptr<git_commit> c;
 
-  // Get the object ID for the commit.
   if (!commit.empty()) {
+    // Get the object ID for the commit.
+    git_oid commitId;
     if (0 != git_oid_fromstr(&commitId, commit.c_str())) {
       cerr << "Fails to convert a hex string into object ID" << endl;
       return false;
     } else {
-      target = &commitId;
+      c.reset(getCommit(&commitId));
+    }
+    if (c.get() == nullptr) {
+      throw runtime_error("Fails to get commit");
     }
   } else {
-    // Get the head.
-    gr.reset(getHead());
-    if (gr.get() != nullptr) {
-      target = git_reference_target(gr.get());
-      if (target == nullptr) {
-        throw runtime_error("Fails to find target");
-      }
-    }
-    // If there is no HEAD yet, this is probably the first commit
-    // in the repository.
+    c.reset(getHeadCommit());
   }
 
   git_tree* tmpTree = nullptr;
-  if (target) {
-    // Verify target's type.
-    unique_ptr<git_odb> odb(getOdb());
-    size_t len = 0;
-    git_otype type;
-    if (0 != git_odb_read_header(&len, &type, odb.get(), target)) {
-      throw runtime_error("Fails to read object from ODB");
-    }
-    if (type != GIT_OBJ_COMMIT) {
-      throw runtime_error("Expect a commit object");
-    }
-
-    // Retrieve existing tree.
-    unique_ptr<git_commit> c(getCommit(target));
-    if (c.get() == nullptr) {
-      throw runtime_error("Fails to retrieve a commit");
-    }
+  if (c.get() != nullptr) {
     if (0 != git_commit_tree(&tmpTree, c.get())) {
       throw runtime_error("Fails to get existing tree");
     }
