@@ -133,34 +133,37 @@ bool Repository::createTreeUsingCommit(
   } else {
     // Get the head.
     gr.reset(getHead());
-    if (gr.get() == nullptr) {
-      throw runtime_error("Fails to find the HEAD");
+    if (gr.get() != nullptr) {
+      target = git_reference_target(gr.get());
+      if (target == nullptr) {
+        throw runtime_error("Fails to find target");
+      }
     }
-    target = git_reference_target(gr.get());
-    if (target == nullptr) {
-      throw runtime_error("Fails to find target");
-    }
+    // If there is no HEAD yet, this is probably the first commit
+    // in the repository.
   }
 
-  // Verify target's type.
-  unique_ptr<git_odb> odb(getOdb());
-  size_t len = 0;
-  git_otype type;
-  if (0 != git_odb_read_header(&len, &type, odb.get(), target)) {
-    throw runtime_error("Fails to read object from ODB");
-  }
-  if (type != GIT_OBJ_COMMIT) {
-    throw runtime_error("Expect a commit object");
-  }
-
-  // Retrieve existing tree.
-  unique_ptr<git_commit> c(getCommit(target));
-  if (c.get() == nullptr) {
-    throw runtime_error("Fails to retrieve a commit");
-  }
   git_tree* tmpTree = nullptr;
-  if (0 != git_commit_tree(&tmpTree, c.get())) {
-    throw runtime_error("Fails to get existing tree");
+  if (target) {
+    // Verify target's type.
+    unique_ptr<git_odb> odb(getOdb());
+    size_t len = 0;
+    git_otype type;
+    if (0 != git_odb_read_header(&len, &type, odb.get(), target)) {
+      throw runtime_error("Fails to read object from ODB");
+    }
+    if (type != GIT_OBJ_COMMIT) {
+      throw runtime_error("Expect a commit object");
+    }
+
+    // Retrieve existing tree.
+    unique_ptr<git_commit> c(getCommit(target));
+    if (c.get() == nullptr) {
+      throw runtime_error("Fails to retrieve a commit");
+    }
+    if (0 != git_commit_tree(&tmpTree, c.get())) {
+      throw runtime_error("Fails to get existing tree");
+    }
   }
 
   return createTreeUsingGitTree(
@@ -277,7 +280,7 @@ vector<string> splitFilePath(const string& path) {
 
 string joinFilePath(const vector<string>& parts, int start, int end) {
   stringstream ss;
-  for (int i = start; ; ++i) {
+  for (int i = start; i < end; ++i) {
     ss << parts[i];
     if (i < end - 1) {
       ss << "/";
@@ -377,9 +380,13 @@ bool Repository::createTreeUsingGitTree(
   // by the update.
   for (int pos = 0; pos < queue.size(); ++pos) {
     git_tree* ptree = std::get<tree_ptr>(queue[pos]).get();
+    int entrycount = 0;
+    if (ptree) {
+      entrycount = git_tree_entrycount(ptree);
+    }
 
     // Find sub-trees of current node.
-    for (int i = 0; i < git_tree_entrycount(ptree); ++i) {
+    for (int i = 0; i < entrycount; ++i) {
       auto entry = git_tree_entry_byindex(ptree, i);
       if (entry == nullptr) {
         cerr << "Entry should not be null" << endl;
@@ -418,7 +425,7 @@ bool Repository::createTreeUsingGitTree(
       }
       auto it = changeTreeMap.find(prefix);
       if (it == changeTreeMap.end()) {
-        throw runtime_error("Fails to find prefix");
+        throw runtime_error("Fails to find prefix " + prefix);
       }
       queue.emplace_back(it->second.second, p.first, nullptr);
     }
@@ -458,8 +465,6 @@ bool Repository::createTreeUsingGitTree(
           } else if (deletedFiles.count(path) > 0) {
             --diff;
             git_treebuilder_remove(b, s.c_str());
-          } else {
-            throw runtime_error("An update is neither addition nor deletion");
           }
         }
       }
@@ -492,7 +497,12 @@ bool Repository::createTreeUsingGitTree(
 
       // Obtain the treebuilder for the parent.
       auto parentIdx = std::get<parent>(queue[i]);
-      const git_tree* ptree = std::get<tree_ptr>(queue[parentIdx]).get();
+      const git_tree* ptree = nullptr;
+
+      if (parentIdx >= 0) {
+        ptree = std::get<tree_ptr>(queue[parentIdx]).get();
+      }
+
       git_treebuilder* b = getTreeBuilder(&builderMap, repo_, prefix, ptree);
 
       // Update the treebuilder.
