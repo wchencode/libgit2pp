@@ -1,10 +1,14 @@
 #include "Wrapper.h"
+#include "TestUtils.h"
+
 #include <stdexcept>
 #include <iostream>
 #include <vector>
 #include <tuple>
 #include <sstream>
 #include <map>
+
+#include <unistd.h>
 
 using namespace std;
 
@@ -39,6 +43,50 @@ Repository::Repository(Repository&& b) {
 Repository::~Repository() {
   if (repo_) {
     git_repository_free(repo_);
+  }
+}
+
+string Repository::commit(
+    const string& updateRef,
+    const string& authorName,
+    const string& authorEmail,
+    const string& message,
+    const unordered_map<string, string>& additions,
+    const unordered_set<string> deletions) {
+  // Obtain a tmpfile to write file contents to.
+  string tmpfile;
+  {
+    stringstream ss;
+    ss << "/tmp/git_commits/" << (uint64_t)pthread_self();
+    auto tmpdir = ss.str();
+    string cmd = string("mkdir -p ") + tmpdir;
+    system(cmd.c_str());
+    tmpfile = tmpdir + "/txt";
+  }
+
+  // Create blob objects.
+  vector<git_oid> oids(additions.size());
+  unordered_map<string, git_oid*> addedFiles;
+  {
+    int idx = 0;
+    for (auto& p : additions) {
+      writeToFile(tmpfile, p.second);
+      addedFiles[p.first] = &oids[idx];
+      if (!createBlobFromDisk(tmpfile, &oids[idx++])) {
+        throw runtime_error("Fails to create an object in git");
+      }
+      unlink(tmpfile.c_str());
+    }
+  }
+
+  git_oid id;
+  if (createTreeUsingCommit(&id, "", addedFiles, deletions)) {
+    string ret;
+    ret.resize(GIT_OID_HEXSZ);
+    git_oid_nfmt(const_cast<char*>(ret.data()), ret.size(), &id);
+    return ret;
+  } else {
+    return string();
   }
 }
 

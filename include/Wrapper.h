@@ -59,6 +59,35 @@ class Repository {
 
   ~Repository();
 
+  /**
+   Create new commit in the repository.
+
+   @param updateRef If not empty, name of the reference that
+          will be updated to point to this commit. If the reference
+          is not direct, it will be resolved to a direct reference.
+          Use "HEAD" to update the HEAD of the current branch and
+          make it point to this commit. If the reference doesn't
+          exist yet, it will be created. If it does exist, the first
+          parent must be the tip of this branch.
+   @param authorName
+   @param authorEmail
+   @param message Full message for this commit
+   @param additions maps relative file paths to their corresponding
+          contents. The files are either changed or added in the
+          commit.
+   @param deletions a list of relative paths to be deleted in the commit.
+
+   @returns a hex representation of the commit ID just created, or
+            an empty string if commit fails.
+  */
+  std::string commit(
+      const std::string& updateRef,
+      const std::string& authorName,
+      const std::string& authorEmail,
+      const std::string& message,
+      const std::unordered_map<std::string, std::string>& additions,
+      const std::unordered_set<std::string> deletions);
+
   /*
    Create a new tree in object database.
 
