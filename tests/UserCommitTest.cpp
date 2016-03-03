@@ -41,6 +41,24 @@ void testUserCommit() {
 
   if (id.empty()) {
     throw runtime_error("Fails to create a commit");
+  }
+
+  unordered_map<string, string> addedFiles2 = {
+    {"README", "hello, world abc"},
+    {"a/Main.cpp", "void main() {}"},
+  };
+  unordered_set<string> deletedFiles = { "a/README" };
+
+  id = r->commit(
+      "HEAD",
+      "My Name",
+      "my.name@gmail.com",
+      "Next commit",
+      addedFiles2,
+      deletedFiles);
+
+  if (id.empty()) {
+    throw runtime_error("Fails to create next commit");
   } else {
     cout << "New commit is " << id << endl;
   }

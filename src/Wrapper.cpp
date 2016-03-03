@@ -383,6 +383,15 @@ bool Repository::createTreeUsingGitTree(
     }
   }
 
+  // For the special key "", we know its git_tree's position in
+  // @param queue is 0.
+  {
+    auto it = changeTreeMap.find("");
+    if (it != changeTreeMap.end()) {
+      it->second.second = 0;
+    }
+  }
+
   // Defines the fields used in the tuple below.
   enum {
     // The position in the queue that holds the parent entry.
@@ -418,8 +427,16 @@ bool Repository::createTreeUsingGitTree(
 
       git_otype otype = git_tree_entry_type(entry);
       if (otype == GIT_OBJ_TREE) {
+        // Figure out the correct key for @param changeTreeMap.
         const char* base = git_tree_entry_name(entry);
-        string name = std::get<rel_path>(queue[pos]) + "/" + base;
+        const auto& relPath = std::get<rel_path>(queue[pos]);
+        string name;
+        if (!relPath.empty()) {
+          name = relPath + "/" + base;
+        } else {
+          name = base;
+        }
+
         auto it = changeTreeMap.find(name);
 
         // We only interested in affected paths.
@@ -430,9 +447,9 @@ bool Repository::createTreeUsingGitTree(
             cerr << "Fails to lookup a tree id" << endl;
             return false;
           } else {
+            it->second.second = queue.size();
             queue.emplace_back(pos, name, unique_ptr<git_tree>(child));
           }
-          it->second.second = queue.size();
         }
       }
     }
@@ -450,6 +467,7 @@ bool Repository::createTreeUsingGitTree(
       if (it == changeTreeMap.end()) {
         throw runtime_error("Fails to find prefix " + prefix);
       }
+      p.second.second = queue.size();
       queue.emplace_back(it->second.second, p.first, nullptr);
     }
   }
