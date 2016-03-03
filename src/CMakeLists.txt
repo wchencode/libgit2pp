@@ -11,4 +11,7 @@ target_include_directories(
 target_link_libraries(
   git2pp LINK_PUBLIC
   ${LIBGIT2_LIBRARY}
+  -pthread
+  -lssl -lcrypto
+  -lz
 )

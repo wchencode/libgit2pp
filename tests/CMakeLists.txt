@@ -7,9 +7,6 @@ target_link_libraries(
   testRepository LINK_PUBLIC
   git2pp
   ${LIBGIT2_LIBRARY}
-  -pthread
-  -lssl -lcrypto
-  -lz
 )
 
 add_executable(testTree TreeTest.cpp)
@@ -20,11 +17,7 @@ target_include_directories(
 target_link_libraries(
   testTree LINK_PUBLIC
   git2pp
-#  -L${CMAKE_BINARY_DIR}/src -lgit2pp
   ${LIBGIT2_LIBRARY}
-  -pthread
-  -lssl -lcrypto
-  -lz
 )
 
 add_executable(testCommit CommitTest.cpp)
@@ -36,9 +29,6 @@ target_link_libraries(
   testCommit LINK_PUBLIC
   git2pp
   ${LIBGIT2_LIBRARY}
-  -pthread
-  -lssl -lcrypto
-  -lz
 )
 
 add_executable(testUserCommit UserCommitTest.cpp)
@@ -50,7 +40,4 @@ target_link_libraries(
   testUserCommit LINK_PUBLIC
   git2pp
   ${LIBGIT2_LIBRARY}
-  -pthread
-  -lssl -lcrypto
-  -lz
 )
