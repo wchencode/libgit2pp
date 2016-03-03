@@ -478,7 +478,7 @@ bool Repository::createTreeUsingGitTree(
       auto it = changeTreeMap.find(name);
       if (it != changeTreeMap.end()) {
         for (auto& s : it->second.first) {
-          auto path = name + "/" + s;
+          auto path = name.empty() ? s : name + "/" + s;
           auto found = addedFiles.find(path);
           if (found != addedFiles.end()) {
             ++diff;
