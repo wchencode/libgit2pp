@@ -1,16 +1,15 @@
 #include "Wrapper.h"
+#include "TestUtils.h"
 #include <stdexcept>
 #include <unordered_map>
 #include <iostream>
-
-#include <unistd.h>
 
 using namespace std;
 using namespace libgit2pp;
 
 void testUserCommit() {
   const string root("/tmp/testUserCommit");
-  unlink(root.c_str());
+  setupRoot(root.c_str());
 
   // Initializing libgit2 library.
   Git2 git2;
