@@ -37,4 +37,19 @@ void writeToFile(const string& path, const string& data) {
   close(fd);
 }
 
+vector<string> splitFilePath(const string& path) {
+  vector<string> ret;
+  for (size_t pos = 0; pos < path.size();) {
+    auto np = path.find('/', pos);
+    if (np != string::npos) {
+      ret.push_back(string(path, pos, np - pos));
+      pos = np + 1;
+    } else {
+      ret.push_back(path.substr(pos));
+      break;
+    }
+  }
+  return ret;
+}
+
 }

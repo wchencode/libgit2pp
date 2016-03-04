@@ -286,21 +286,6 @@ git_repository* Repository::release() {
   return ret;
 }
 
-vector<string> splitFilePath(const string& path) {
-  vector<string> ret;
-  for (size_t pos = 0; pos < path.size();) {
-    auto np = path.find('/', pos);
-    if (np != string::npos) {
-      ret.push_back(string(path, pos, np - pos));
-      pos = np + 1;
-    } else {
-      ret.push_back(path.substr(pos));
-      break;
-    }
-  }
-  return ret;
-}
-
 string joinFilePath(const vector<string>& parts, int start, int end) {
   stringstream ss;
   for (int i = start; i < end; ++i) {

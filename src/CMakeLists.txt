@@ -2,6 +2,7 @@ add_library(
   git2pp STATIC
   Wrapper.cpp
   TestUtils.cpp
+  PathTree.cpp
 )
 target_include_directories(
   git2pp PUBLIC
