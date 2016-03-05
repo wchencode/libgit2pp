@@ -1,6 +1,13 @@
 #pragma once
 
+#include <random>
+#include <unordered_map>
+#include <memory>
+#include <string>
+
 namespace libgit2pp {
+
+class PathTree;
 
 // This class generates diffs to be committed.
 class DiffGenerator {
@@ -14,20 +21,23 @@ class DiffGenerator {
                              exist in the repository. This number includes
                              files that to be deleted and files that to
                              be updated in the diff.
-   @param avgDeletedFileNumber the average number of files to be deleted
-                               in a diff.
    @param avgDirDepth the average depth of directory.
-   @param finalNumberOfDirectory how many directories are when the
-                                 generator completes.
+   @param topDirFanout how many top level directories when the generator
+                       completes.
+   @param middleDirFanout how many middle level directories (non-top and
+                          non-leaf directories) when the generator completes.
+   @param leafDirFanout how many leaf level directories (directories without
+                        sub directories) when the generator completes.
    @param finalNumberOfFiles how many files are when generator completes.
   */
   DiffGenerator(
       int avgFileSize,
-      double avgFileNumber,
-      double avgOverlappingFileNumber,
-      double avgDeletedFileNumber,
-      double avgDirDepth,
-      int finalNumberOfDirectory,
+      int avgFileNumber,
+      int avgOverlappingFileNumber,
+      int avgDirDepth,
+      int topDirFanout,
+      int middleDirFanout,
+      int leafDirFanout,
       int finalNumberOfFiles);
 
   /**
@@ -35,21 +45,39 @@ class DiffGenerator {
 
    @param addedFiles the set of files and their corresponding contents
                      in the diff.
-   @param deletedFiles the set of files to be removed in the diff.
    @returns false if there is no more diffs to generate according
             to specification. If false is returned, the fields
             @param addedFiles and @param deletedFiles should be
             ignored by the caller.
   */
-  bool next(
-      std::unordered_map<std::string, std::string>* addedFiles,
-      std::unordered_set<std::string>* deletedFiles);
+  bool next(std::unordered_map<std::string, std::string>* addedFiles);
 
-  int getNumberOfFiles() const;
+  int getNumberOfFiles();
 
-  int getNumberOfDirectories() const;
+  int getNumberOfTopLevelDirectories();
+
+  int getNumberOfTotalDirectories();
 
  private:
+  const int avgFileSize_;
+  const int avgFileNumber_;
+  const int avgOverlappingFileNumber_;
+  const int avgDirDepth_;
+  const int topDirFanout_;
+  const int middleDirFanout_;
+  const int leafDirFanout_;
+  const int finalNumberOfFiles_;
+
+  std::mt19937 mt_;
+
+  std::unique_ptr<PathTree> tree_;
+
+  // Create file or directory name.
+  std::string genFileName();
+
+  // Create text data.
+  std::string genFileData();
 };
+
 
 } // libgit2pp

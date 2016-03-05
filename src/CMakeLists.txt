@@ -3,6 +3,7 @@ add_library(
   Wrapper.cpp
   TestUtils.cpp
   PathTree.cpp
+  DiffGenerator.cpp
 )
 target_include_directories(
   git2pp PUBLIC
