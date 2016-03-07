@@ -12,10 +12,10 @@ const int avgFileSize = 128;
 const int avgFileNumber = 16;
 const int avgOverlappingFileNumber = 1;
 const int avgDirDepth = 4;
-const int topDirFanout = 20;
+const int topDirFanout = 300;
 const int middleDirFanout = 5;
-const int leafDirFanout = 10;
-const int finalNumberOfFiles = 100;
+const int leafDirFanout = 50;
+const int finalNumberOfFiles = 10000;
 
 const string root("/tmp/LoadTest");
 

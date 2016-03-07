@@ -1,5 +1,6 @@
 #include "PathTree.h"
 #include "TestUtils.h"
+#include <iostream>
 
 using namespace std;
 
@@ -82,12 +83,12 @@ createRecursivelyInternal(Node* root, const vector<string>& parts, int idx) {
         root->maxDepth = p->maxDepth + 1;
         needPropogate = true;
       }
-      if (savedSubDirs < p->totalSubDirs) {
-        root->totalSubDirs = (p->totalSubDirs - savedSubDirs);
+      if (savedSubDirs != p->totalSubDirs) {
+        root->totalSubDirs += (p->totalSubDirs - savedSubDirs);
         needPropogate = true;
       }
-      if (savedFiles < p->totalFiles) {
-        root->totalFiles = (p->totalFiles - savedFiles);
+      if (savedFiles != p->totalFiles) {
+        root->totalFiles += (p->totalFiles - savedFiles);
         needPropogate = true;
       }
     }
@@ -112,6 +113,12 @@ createRecursivelyInternal(Node* root, const vector<string>& parts, int idx) {
       if (!needPropogate) {
         needPropogate = true;
       }
+    }
+
+    if (needPropogate) {
+      root->maxDepth = parts.size() - idx;
+      root->totalSubDirs += (parts.size() - idx);
+      ++root->totalFiles;
     }
 
     return make_pair(p, needPropogate);
