@@ -40,6 +40,8 @@ class DiffGenerator {
       int leafDirFanout,
       int finalNumberOfFiles);
 
+  ~DiffGenerator();
+
   /**
    Use this method to obtain generated diffs.
 

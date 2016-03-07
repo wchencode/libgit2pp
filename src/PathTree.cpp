@@ -71,11 +71,11 @@ createRecursivelyInternal(Node* root, const vector<string>& parts, int idx) {
   auto p = root->findChild(parts[idx]);
   bool needPropogate = false;
 
-  int savedSubDirs = p->totalSubDirs;
-  int savedFiles = p->totalFiles;
-
   if (p != nullptr && idx < parts.size() - 1) {
     // We are searching through existing nodes.
+    int savedSubDirs = p->totalSubDirs;
+    int savedFiles = p->totalFiles;
+
     auto ret = createRecursivelyInternal(p, parts, idx+1);
     if (ret.second) {
       if (root->maxDepth < p->maxDepth + 1) {

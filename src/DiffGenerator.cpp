@@ -7,6 +7,9 @@ using namespace std;
 
 namespace libgit2pp {
 
+// Deviation for log normal distribution.
+const double lognormalDev = 0.25;
+
 DiffGenerator::DiffGenerator(
     int avgFileSize,
     int avgFileNumber,
@@ -28,6 +31,9 @@ DiffGenerator::DiffGenerator(
           tree_(new PathTree) {
 }
 
+DiffGenerator::~DiffGenerator() {
+}
+
 bool DiffGenerator::next(unordered_map<string, string>* addedFiles) {
   auto root = tree_->find("");
   if (root->totalFiles > finalNumberOfFiles_) {
@@ -37,13 +43,13 @@ bool DiffGenerator::next(unordered_map<string, string>* addedFiles) {
   // Figure out how many files are in the diff.
   int numFiles = 0;
   {
-    lognormal_distribution<> d(avgFileNumber_ - 1);
+    lognormal_distribution<> d(log(avgFileNumber_ - 1), lognormalDev);
     numFiles = std::round(d(mt_)) + 1;
   }
 
   int overlappingFiles = 0;
   {
-    lognormal_distribution<> d(avgOverlappingFileNumber_);
+    lognormal_distribution<> d(log(avgOverlappingFileNumber_), lognormalDev);
     overlappingFiles = std::round(d(mt_));
     if (overlappingFiles > numFiles) {
       overlappingFiles = numFiles;
@@ -56,7 +62,7 @@ bool DiffGenerator::next(unordered_map<string, string>* addedFiles) {
     {
       // The depth should at least be 3. In that case we have one top
       // level dir, one leaf level dir, and a file (which counts as a level).
-      lognormal_distribution<> d(avgDirDepth_ - 3);
+      lognormal_distribution<> d(log(avgDirDepth_ - 3), lognormalDev);
       dirDepth = std::round(d(mt_)) + 3;
     }
 
@@ -80,8 +86,8 @@ bool DiffGenerator::next(unordered_map<string, string>* addedFiles) {
     // Pick middle level directories.
     for (int i = 0; i < dirDepth - 3; ++i) {
       if (!createDir) {
-        lognormal_distribution<> d(middleDirFanout_);
-        if (p->children.size() < std::round(d(mt_))) {
+        lognormal_distribution<> d(log(middleDirFanout_), lognormalDev);
+        if (p->children.empty() || p->children.size() < std::round(d(mt_))) {
           // Need to create a new directory.
           createDir = true;
         } else {
@@ -100,8 +106,8 @@ bool DiffGenerator::next(unordered_map<string, string>* addedFiles) {
 
     // Pick leaf level directory.
     if (!createDir) {
-      lognormal_distribution<> d(leafDirFanout_);
-      if (p->children.size() < std::round(d(mt_))) {
+      lognormal_distribution<> d(log(leafDirFanout_), lognormalDev);
+      if (p->children.empty() || p->children.size() < std::round(d(mt_))) {
         // Need to create a new directory.
         createDir = true;
       } else {
@@ -118,13 +124,14 @@ bool DiffGenerator::next(unordered_map<string, string>* addedFiles) {
     }
 
     // Pick file name.
-    if (!createDir && i < overlappingFiles) {
+    if (!createDir && !p->children.empty() && i < overlappingFiles) {
       // Use existing path.
       uniform_int_distribution<> dis(0, p->children.size() - 1);
       auto idx = dis(mt_);
       p = p->children[idx];
       path = path + p->name;
     } else {
+      createDir = true;
       path = path + genFileName();
       tree_->createRecursively(path);
     }
@@ -152,7 +159,7 @@ int DiffGenerator::getNumberOfTotalDirectories() {
 
 string DiffGenerator::genFileName() {
   // Average file name length is 7.
-  lognormal_distribution<> d(7);
+  lognormal_distribution<> d(log(7), lognormalDev);
   int num = std::round(d(mt_));
 
   string ret;
@@ -165,7 +172,7 @@ string DiffGenerator::genFileName() {
 }
 
 string DiffGenerator::genFileData() {
-  lognormal_distribution<> d(avgFileSize_);
+  lognormal_distribution<> d(log(avgFileSize_), lognormalDev);
   int num = std::round(d(mt_));
 
   string ret;
