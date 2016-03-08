@@ -2,20 +2,22 @@
 #include "Wrapper.h"
 #include "TestUtils.h"
 
+#include <chrono>
 #include <sstream>
 #include <iostream>
 
 using namespace libgit2pp;
 using namespace std;
+using namespace std::chrono;
 
-const int avgFileSize = 128;
+const int avgFileSize = 4096*4;
 const int avgFileNumber = 16;
 const int avgOverlappingFileNumber = 1;
 const int avgDirDepth = 4;
-const int topDirFanout = 300;
+const int topDirFanout = 500;
 const int middleDirFanout = 5;
 const int leafDirFanout = 50;
-const int finalNumberOfFiles = 10000;
+const int finalNumberOfFiles = 300000;
 
 const string root("/tmp/LoadTest");
 
@@ -41,6 +43,9 @@ main() {
       leafDirFanout,
       finalNumberOfFiles);
 
+  // Measures total time spent on commit.
+  int64_t elaps = 0;
+
   for (int i = 0; gen.getNumberOfFiles() < finalNumberOfFiles; ++i) {
     unordered_map<string, string> diff;
     if (!gen.next(&diff)) {
@@ -54,21 +59,30 @@ main() {
       commitMessage = ss.str();
     }
 
-    string id = r->commit(
-        "HEAD",
-        "My Name",
-        "my.name@gmail.com",
-        commitMessage,
-        diff,
-        unordered_set<string>());
+    string id;
+
+    {
+      auto start = steady_clock::now();
+      id = r->commit(
+          "HEAD",
+          "My Name",
+          "my.name@gmail.com",
+          commitMessage,
+          diff,
+          unordered_set<string>());
+      auto end = steady_clock::now();
+      elaps += duration_cast<microseconds>(end - start).count();
+    }
 
     if (id.empty()) {
       throw runtime_error("Fails to create a commit");
     }
 
-    if (i % 20 == 19) {
+    if (i % 50 == 49) {
+      auto avg = elaps / 50;
+      elaps = 0;
       cerr << "At " << i << "th commits, " << gen.getNumberOfFiles()
-           << " of files created." << endl;
+           << " of files created avg " << avg << " us" << endl;
     }
   }
 }
